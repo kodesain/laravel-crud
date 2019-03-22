@@ -91,8 +91,7 @@ class CategoriesController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function destroy($id) {
-        $category = Categories::findOrFail($id);
-        $category->delete();
+        Categories::findOrFail($id)->delete();
 
         return redirect('categories')->with('success', 'Category has been successfully deleted');
     }

@@ -127,8 +127,7 @@ class ProductsController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function destroy($id) {
-        $product = Products::findOrFail($id);
-        $product->delete();
+        Products::findOrFail($id)->delete();
 
         return redirect('products')->with('success', 'Product has been successfully deleted');
     }
