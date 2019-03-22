@@ -37,10 +37,9 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-danger d-none" role="alert" id="formAlert">
-                    <ul class="m-0"></ul>
-                </div>
+                <div class="alert alert-danger d-none" role="alert" id="formAlert"></div>
                 <form method="post">
+                    {{ csrf_field() }}
                     <input type="hidden" id="pay_id" name="pay_id" value="">
                     <div class="form-group">
                         <label for="pay_name">Payment</label>
@@ -66,7 +65,11 @@
     });
 
     function show() {
-        $.post("<?php echo site_url('payments'); ?>/read", function (result) {
+        var data = {
+            _token: $("input[name='_token']").val()
+        };
+
+        $.post("{{ route('payments.show') }}", data, function (result) {
             var row = "";
 
             $.each(result.data, function (index, value) {
@@ -95,8 +98,12 @@
     }
 
     function edit(id) {
+        var data = {
+            _token: $("input[name='_token']").val()
+        };
+
         if (typeof id !== "undefined") {
-            $.post("<?php echo site_url('payments'); ?>/read/" + id, function (result) {
+            $.post("{{ route('payments.show') }}/" + id, data, function (result) {
                 $("#pay_id").val(result.data.pay_id);
                 $("#pay_name").val(result.data.pay_name);
                 $("#pay_description").val(result.data.pay_description);
@@ -110,38 +117,39 @@
 
     function save() {
         var data = {
+            _token: $("input[name='_token']").val(),
             pay_id: $("#pay_id").val(),
             pay_name: $("#pay_name").val(),
             pay_description: $("#pay_description").val()
         };
 
-        $.post("<?php echo site_url('payments'); ?>/save/" + $("#pay_id").val(), data, function (result) {
+        var id = ($("#pay_id").val() != "" ? "/" + $("#pay_id").val() : "");
+
+        $.post("{{ route('payments.save') }}" + id, data, function (result) {
             if (result.status == "success") {
-                $("#dataAlert").text(result.message);
+                $("#dataAlert").html(result.message);
                 $("#dataAlert").removeClass("d-none");
 
                 $("#formModal").modal("hide");
 
                 show();
             } else {
-                var list = "";
-
-                $.each(result.message, function (index, value) {
-                    list += '<li>' + value + '</li>';
-                });
-
-                $("#formAlert ul").empty().append(list);
+                $("#formAlert").html(result.message);
                 $("#formAlert").removeClass("d-none");
             }
         }, "json");
     }
 
     function drop(id) {
+        var data = {
+            _token: $("input[name='_token']").val()
+        };
+
         if (typeof id !== "undefined") {
             if (confirm("Are you sure to delete?") == true) {
-                $.post("<?php echo site_url('payments'); ?>/delete/" + id, function (result) {
+                $.post("{{ route('payments.drop') }}/" + id, data, function (result) {
                     if (result.status == "success") {
-                        $("#dataAlert").text(result.message);
+                        $("#dataAlert").html(result.message);
                         $("#dataAlert").removeClass("d-none");
 
                         show();

@@ -39,12 +39,10 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-danger d-none" role="alert" id="formAlert">
-                    <ul class="m-0"></ul>
-                </div>
+                <div class="alert alert-danger d-none" role="alert" id="formAlert"></div>
                 <form method="post">
+                    {{ csrf_field() }}
                     <input type="hidden" id="ship_id" name="ship_id" value="">
-                    <input type="hidden" id="ship_image" name="ship_image" value="">
                     <div class="form-group">
                         <label for="ship_name">Shipping</label>
                         <input type="text" class="form-control" id="ship_name" name="ship_name" value="" required>
@@ -54,8 +52,8 @@
                         <input type="text" class="form-control" id="ship_description" name="ship_description" value="" required>
                     </div>
                     <div class="form-group">
-                        <label for="image_file">Image File</label>
-                        <input type="file" class="form-control" id="image_file" name="image_file">
+                        <label for="ship_image">Image File</label>
+                        <input type="file" class="form-control" id="ship_image" name="ship_image">
                         <div class="mt-3">
                             <img id="image_preview" style="max-width: 200px;">
                         </div>
@@ -74,20 +72,24 @@
     $(document).ready(function () {
         show();
 
-        $("#image_file").change(function () {
+        $("#ship_image").change(function () {
             $("#image_preview").attr("src", URL.createObjectURL(this.files[0]));
         });
     });
 
     function show() {
-        $.post("<?php echo site_url('shipping'); ?>/read", function (result) {
+        var data = {
+            _token: $("input[name='_token']").val()
+        };
+
+        $.post("{{ route('shipping.show') }}", data, function (result) {
             var row = "";
 
             $.each(result.data, function (index, value) {
                 row += '<tr> \
                     <td>' + value.ship_name + '</td> \
                     <td>' + value.ship_description + '</td> \
-                    <td>' + (value.ship_image != '' ? '<img src="<?php echo base_url(); ?>' + value.ship_image + '" width="100">' : '') + '</td> \
+                    <td>' + (value.ship_image != '' ? '<img src="{{ url('public') }}' + (value.ship_image.replace("public/", "/storage/")) + '" width="100">' : '') + '</td> \
                     <td> \
                         <button type="button" class="btn btn-primary btn-sm mr-1" onclick="edit(' + value.ship_id + ');"><i class="fas fa-pen"></i> Edit</button> \
                         <button type="button" class="btn btn-danger btn-sm" onclick="drop(' + value.ship_id + ');"><i class="fas fa-trash"></i> Delete</button> \
@@ -103,8 +105,7 @@
         $("#ship_id").val("");
         $("#ship_name").val("");
         $("#ship_description").val("");
-        $("#ship_image").val("");
-        $("#image_file").val(null);
+        $("#ship_image").val(null);
         $("#image_preview").attr("src", "");
 
         $("#formAlert").addClass("d-none");
@@ -113,14 +114,17 @@
     }
 
     function edit(id) {
+        var data = {
+            _token: $("input[name='_token']").val()
+        };
+
         if (typeof id !== "undefined") {
-            $.post("<?php echo site_url('shipping'); ?>/read/" + id, function (result) {
+            $.post("{{ route('shipping.show') }}/" + id, data, function (result) {
                 $("#ship_id").val(result.data.ship_id);
                 $("#ship_name").val(result.data.ship_name);
                 $("#ship_description").val(result.data.ship_description);
-                $("#ship_image").val(result.data.ship_image);
-                $("#image_file").val(null);
-                $("#image_preview").attr("src", "<?php echo base_url(); ?>" + result.data.ship_image);
+                $("#ship_image").val(null);
+                $("#image_preview").attr("src", "{{ url('public') }}" + (result.data.ship_image.replace("public/", "/storage/")));
 
                 $("#formAlert").addClass("d-none");
                 $("#formModalLabel").text("Edit Shipping");
@@ -131,9 +135,12 @@
 
     function save() {
         var data = new FormData($("form")[0]);
+        data.append("_token", $("input[name='_token']").val());
+
+        var id = ($("#ship_id").val() != "" ? "/" + $("#ship_id").val() : "");
 
         $.ajax({
-            url: "<?php echo site_url('shipping'); ?>/save/" + $("#ship_id").val(),
+            url: "{{ route('shipping.save') }}" + id,
             data: data,
             dataType: "json",
             type: "POST",
@@ -141,20 +148,14 @@
             processData: false,
             success: function (result) {
                 if (result.status == "success") {
-                    $("#dataAlert").text(result.message);
+                    $("#dataAlert").html(result.message);
                     $("#dataAlert").removeClass("d-none");
 
                     $("#formModal").modal("hide");
 
                     show();
                 } else {
-                    var list = "";
-
-                    $.each(result.message, function (index, value) {
-                        list += '<li>' + value + '</li>';
-                    });
-
-                    $("#formAlert ul").empty().append(list);
+                    $("#formAlert").html(result.message);
                     $("#formAlert").removeClass("d-none");
                 }
             }
@@ -162,11 +163,15 @@
     }
 
     function drop(id) {
+        var data = {
+            _token: $("input[name='_token']").val()
+        };
+
         if (typeof id !== "undefined") {
             if (confirm("Are you sure to delete?") == true) {
-                $.post("<?php echo site_url('shipping'); ?>/delete/" + id, function (result) {
+                $.post("{{ route('shipping.drop') }}/" + id, data, function (result) {
                     if (result.status == "success") {
-                        $("#dataAlert").text(result.message);
+                        $("#dataAlert").html(result.message);
                         $("#dataAlert").removeClass("d-none");
 
                         show();
